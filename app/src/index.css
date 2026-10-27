@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Ensure display math formulas scroll horizontally on narrow mobile screens instead of overflowing */
+.katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.35rem 0;
+  margin: 0.65rem 0 !important;
+}
+
+.katex {
+  font-size: 1.04em;
+}
