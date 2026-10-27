@@ -27,16 +27,24 @@ export function saveLocalProgress(progress: ProgressMap): void {
   }
 }
 
+function normalizeSupabaseUrl(raw: string): string {
+  return raw
+    .trim()
+    .replace(/\/rest\/v1\/?$/i, '')
+    .replace(/\/+$/, '');
+}
+
 export function loadSupabaseConfig(): SupabaseConfig {
-  const envUrl = import.meta.env.VITE_SUPABASE_URL || '';
-  const envKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+  const envUrl = normalizeSupabaseUrl(import.meta.env.VITE_SUPABASE_URL || '');
+  const envKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
   try {
     const saved = localStorage.getItem(SUPABASE_CONFIG_KEY);
     if (saved) {
       const parsed = JSON.parse(saved) as SupabaseConfig;
-      if (parsed.url && parsed.anonKey) {
-        return parsed;
-      }
+      return {
+        url: normalizeSupabaseUrl(parsed.url || '') || envUrl,
+        anonKey: (parsed.anonKey || '').trim() || envKey,
+      };
     }
   } catch {
     // ignore
@@ -45,7 +53,11 @@ export function loadSupabaseConfig(): SupabaseConfig {
 }
 
 export function saveSupabaseConfig(config: SupabaseConfig): void {
-  localStorage.setItem(SUPABASE_CONFIG_KEY, JSON.stringify(config));
+  const cleaned: SupabaseConfig = {
+    url: normalizeSupabaseUrl(config.url),
+    anonKey: config.anonKey.trim(),
+  };
+  localStorage.setItem(SUPABASE_CONFIG_KEY, JSON.stringify(cleaned));
   // Reset cached client
   supabaseInstance = null;
   cachedConfigKey = '';
@@ -61,7 +73,7 @@ export function getSupabaseClient(): SupabaseClient | null {
   }
 
   try {
-    supabaseInstance = createClient(config.url.trim(), config.anonKey.trim());
+    supabaseInstance = createClient(config.url, config.anonKey);
     cachedConfigKey = key;
     return supabaseInstance;
   } catch (e) {
